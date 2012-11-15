@@ -1,19 +1,22 @@
 defmodule AzureClient do
 
-  def azreq(client, path, path2, payload, method // :post, headers // []) do
+  def azreq(path, path2, payload, method // :post, headers // []) do
+    azreqcl(:undefined, path, path2, payload, method, headers)
+  end
+
+  def azreqcl(client, path, path2, payload, method // :post, headers // []) do
     headersToSign = [{'x-ms-date', :httpd_util.rfc1123_date},
                      {'Content-Type', 'application/atom+xml'}] ++ headers
     authorization = auth_header(path, method, headersToSign, key)
     headers = [{"Authorization", 'SharedKey ' ++ account ++ ':' ++ authorization},
                {"Content-Length", size_of(payload)}] ++ headersToSign
-    url = build_url ++ path ++ path2
-    request client, method, headers, payload, url
+    request client, method, headers, payload, build_url, path ++ path2
   end
 
-  def request(client, method // :get, headers // [], payload // '', url // '') do
+  def request(client, method // :get, headers // [], payload // '', url // '', path // '') do
     options = []
     headers = lc {headerKey, value} inlist headers, do: {tobin(headerKey), value}
-    :hackney_dev.call client, method, url, headers, payload, options
+    :hackney_dev.call client, method, url, path, headers, payload, options
   end
 
   defp auth_header(path, httpMethod, headersToSign, key,  contentType // 'application/atom+xml') do
